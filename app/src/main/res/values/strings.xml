@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">PrivacyGuard-Android</string>
+    <string name="start_monitoring">Start Monitoring</string>
+    <string name="stop_monitoring">Stop Monitoring</string>
+    <string name="privacy_shield_active">PRIVACY SHIELD ACTIVE</string>
+    <string name="multiple_faces_detected">Multiple faces detected. Screen protected from shoulder surfing.</string>
+    <string name="no_faces_or_single">Monitoring active. No threats detected.</string>
+</resources>
