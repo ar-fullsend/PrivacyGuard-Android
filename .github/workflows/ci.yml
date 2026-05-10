@@ -22,6 +22,8 @@ jobs:
 
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
+      with:
+        gradle-version: '8.9'
 
     - name: Build with Gradle
       run: gradle build --stacktrace
@@ -48,6 +50,8 @@ jobs:
 
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
+      with:
+        gradle-version: '8.9'
 
     - name: Run tests
       run: gradle test
