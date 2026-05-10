@@ -1,8 +1,12 @@
 package com.arfullsend.privacyguard
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.util.Log
 import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
@@ -28,6 +32,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var faceDetector: FaceDetector
     private var isMonitoring = false
     private lateinit var cameraExecutor: ExecutorService
+    private var lastThreatDetected = false
 
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
@@ -35,7 +40,7 @@ class MainActivity : AppCompatActivity() {
                 startCamera()
             } else {
                 viewBinding.statusText.text = "Camera permission denied. Cannot monitor."
-                viewBinding.statusText.setTextColor(0xFFFF0000.toInt())
+                viewBinding.statusText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark))
             }
         }
 
@@ -52,10 +57,21 @@ class MainActivity : AppCompatActivity() {
             .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
             .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_NONE)
             .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_NONE)
-            .setMinFaceSize(0.1f)
+            .setMinFaceSize(0.15f)  // Slightly higher threshold for better accuracy
             .build()
         faceDetector = FaceDetection.getClient(options)
 
+        setupListeners()
+
+        // Check camera permission
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            startCamera()
+        } else {
+            requestPermissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+    }
+
+    private fun setupListeners() {
         viewBinding.toggleButton.setOnClickListener {
             if (isMonitoring) {
                 stopMonitoring()
@@ -66,70 +82,72 @@ class MainActivity : AppCompatActivity() {
 
         viewBinding.dismissShieldButton.setOnClickListener {
             viewBinding.shieldOverlay.visibility = View.GONE
+            lastThreatDetected = false
             if (isMonitoring) {
-                viewBinding.statusText.text = "Monitoring resumed"
+                viewBinding.statusText.text = getString(R.string.monitoring_active)
+                viewBinding.statusText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_dark))
             }
-        }
-
-        // Check camera permission
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            startCamera()
-        } else {
-            requestPermissionLauncher.launch(Manifest.permission.CAMERA)
         }
     }
 
     private fun startMonitoring() {
         isMonitoring = true
         viewBinding.toggleButton.text = getString(R.string.stop_monitoring)
-        viewBinding.statusText.text = "Monitoring active..."
-        viewBinding.statusText.setTextColor(0xFF00FF00.toInt())
-        // Camera already started in onCreate, analysis runs when bound
+        viewBinding.statusText.text = getString(R.string.monitoring_active)
+        viewBinding.statusText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_dark))
+        Log.d("PrivacyGuard", "Monitoring started")
     }
 
     private fun stopMonitoring() {
         isMonitoring = false
+        lastThreatDetected = false
         viewBinding.toggleButton.text = getString(R.string.start_monitoring)
         viewBinding.shieldOverlay.visibility = View.GONE
-        viewBinding.statusText.text = "Monitoring stopped"
-        viewBinding.statusText.setTextColor(0xFFFFFFFF.toInt())
-        // Keep camera bound for quick resume, or unbind if needed
+        viewBinding.statusText.text = getString(R.string.monitoring_stopped)
+        viewBinding.statusText.setTextColor(ContextCompat.getColor(this, android.R.color.white))
+        Log.d("PrivacyGuard", "Monitoring stopped")
     }
 
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
 
         cameraProviderFuture.addListener({
-            cameraProvider = cameraProviderFuture.get()
-
-            val preview = Preview.Builder()
-                .build()
-                .also {
-                    it.setSurfaceProvider(viewBinding.viewFinder.surfaceProvider)
-                }
-
-            val imageAnalysis = ImageAnalysis.Builder()
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .build()
-                .also {
-                    it.setAnalyzer(cameraExecutor, FaceAnalyzer(faceDetector) { faceCount ->
-                        runOnUiThread {
-                            updateUI(faceCount)
-                        }
-                    })
-                }
-
-            val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
-
             try {
+                cameraProvider = cameraProviderFuture.get()
+
+                val preview = Preview.Builder()
+                    .build()
+                    .also {
+                        it.setSurfaceProvider(viewBinding.viewFinder.surfaceProvider)
+                    }
+
+                val imageAnalysis = ImageAnalysis.Builder()
+                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                    .build()
+                    .also {
+                        it.setAnalyzer(cameraExecutor, FaceAnalyzer(faceDetector) { faceCount ->
+                            runOnUiThread {
+                                updateUI(faceCount)
+                            }
+                        })
+                    }
+
+                val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
+
                 cameraProvider?.unbindAll()
                 cameraProvider?.bindToLifecycle(
                     this, cameraSelector, preview, imageAnalysis
                 )
-                viewBinding.statusText.text = "Camera ready. Tap Start Monitoring"
+                viewBinding.statusText.text = getString(R.string.camera_ready)
+                viewBinding.statusText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_dark))
+                Log.i("PrivacyGuard", "Camera started successfully with front camera")
             } catch (exc: Exception) {
                 Log.e("PrivacyGuard", "Camera binding failed", exc)
-                viewBinding.statusText.text = "Failed to start camera"
+                viewBinding.statusText.text = getString(R.string.camera_failed)
+                viewBinding.statusText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark))
+                if (exc.message?.contains("front", ignoreCase = true) == true) {
+                    viewBinding.statusText.text = "No front camera available. Please use a device with front camera."
+                }
             }
         }, ContextCompat.getMainExecutor(this))
     }
@@ -140,12 +158,42 @@ class MainActivity : AppCompatActivity() {
         if (faceCount > 1) {
             viewBinding.shieldOverlay.visibility = View.VISIBLE
             viewBinding.statusText.text = "THREAT: $faceCount faces detected!"
-            viewBinding.statusText.setTextColor(0xFFFF0000.toInt())
+            viewBinding.statusText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark))
+
+            if (!lastThreatDetected) {
+                triggerVibration()
+                lastThreatDetected = true
+                Log.w("PrivacyGuard", "Threat detected: $faceCount faces - shield activated")
+            }
         } else {
             viewBinding.shieldOverlay.visibility = View.GONE
-            val status = if (faceCount == 0) "No face detected" else "Single face - Secure"
+            lastThreatDetected = false
+            val status = if (faceCount == 0) getString(R.string.no_face_detected) else getString(R.string.single_face_secure)
             viewBinding.statusText.text = status
-            viewBinding.statusText.setTextColor(0xFF00FF00.toInt())
+            viewBinding.statusText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_dark))
+        }
+    }
+
+    private fun triggerVibration() {
+        try {
+            val vibrator = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+                vibratorManager.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            }
+
+            if (vibrator.hasVibrator()) {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    vibrator.vibrate(VibrationEffect.createOneShot(300, VibrationEffect.DEFAULT_AMPLITUDE))
+                } else {
+                    @Suppress("DEPRECATION")
+                    vibrator.vibrate(300)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("PrivacyGuard", "Vibration failed", e)
         }
     }
 
@@ -153,9 +201,11 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         cameraExecutor.shutdown()
         faceDetector.close()
+        cameraProvider?.unbindAll()
+        Log.d("PrivacyGuard", "Resources cleaned up")
     }
 
-    // Inner class for real-time face analysis
+    // Inner class for real-time face analysis - expanded with better error handling
     private class FaceAnalyzer(
         private val faceDetector: FaceDetector,
         private val onFacesDetected: (Int) -> Unit
@@ -165,24 +215,30 @@ class MainActivity : AppCompatActivity() {
         override fun analyze(imageProxy: ImageProxy) {
             val mediaImage = imageProxy.image
             if (mediaImage != null) {
-                val image = InputImage.fromMediaImage(
-                    mediaImage,
-                    imageProxy.imageInfo.rotationDegrees
-                )
+                try {
+                    val image = InputImage.fromMediaImage(
+                        mediaImage,
+                        imageProxy.imageInfo.rotationDegrees
+                    )
 
-                faceDetector.process(image)
-                    .addOnSuccessListener { faces ->
-                        onFacesDetected(faces.size)
-                        imageProxy.close()
-                    }
-                    .addOnFailureListener { e ->
-                        Log.e("PrivacyGuard", "Face detection failed", e)
-                        imageProxy.close()
-                    }
-                    .addOnCompleteListener {
-                        // Ensure proxy is closed even on unexpected paths
-                        if (!imageProxy.isClosed) imageProxy.close()
-                    }
+                    faceDetector.process(image)
+                        .addOnSuccessListener { faces ->
+                            onFacesDetected(faces.size)
+                            imageProxy.close()
+                        }
+                        .addOnFailureListener { e ->
+                            Log.e("PrivacyGuard", "Face detection failed", e)
+                            onFacesDetected(0) // Safe fallback
+                            imageProxy.close()
+                        }
+                        .addOnCompleteListener {
+                            if (!imageProxy.isClosed) imageProxy.close()
+                        }
+                } catch (e: Exception) {
+                    Log.e("PrivacyGuard", "Error processing image frame", e)
+                    onFacesDetected(0)
+                    imageProxy.close()
+                }
             } else {
                 imageProxy.close()
             }

@@ -5,4 +5,10 @@
     <string name="privacy_shield_active">PRIVACY SHIELD ACTIVE</string>
     <string name="multiple_faces_detected">Multiple faces detected. Screen protected from shoulder surfing.</string>
     <string name="no_faces_or_single">Monitoring active. No threats detected.</string>
+    <string name="monitoring_active">Monitoring active...</string>
+    <string name="monitoring_stopped">Monitoring stopped</string>
+    <string name="camera_ready">Camera ready. Tap Start Monitoring</string>
+    <string name="camera_failed">Failed to start camera. Check device compatibility.</string>
+    <string name="no_face_detected">No face detected</string>
+    <string name="single_face_secure">Single face - Secure</string>
 </resources>
