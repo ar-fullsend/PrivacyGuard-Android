@@ -2,64 +2,94 @@
 
 **Your screen. Yours alone. (Android Edition)**
 
-A native Android privacy layer demo for Samsung Galaxy and other Android phones. Built with CameraX and ML Kit Face Detection.
+A proof-of-concept Android application that uses the device's front camera to detect multiple faces in real time and activates an in-app privacy shield overlay. Built with CameraX for camera access and Google ML Kit for on-device face detection. Optimized for Samsung Galaxy devices and compatible with other modern Android phones.
 
 ## The Problem
-The screen is the new front door. And right now, anyone walking past can step inside.
 
-- **73%** of professionals report shoulder-surfing in transit, cafés, or shared workspaces.
-- **1 in 4** data breaches involve some form of visual or in-person credential exposure.
-- **$4.9B** estimated annual loss from visual hacking incidents across enterprise sectors.
+Shoulder-surfing poses a significant privacy risk in public environments such as transit, cafés, and shared workspaces.
+
+- **73%** of professionals report experiencing shoulder-surfing.
+- **1 in 4** data breaches involve visual or in-person credential exposure.
+- Estimated **$4.9B** in annual losses from visual hacking incidents.
 
 ## The Solution
-**PrivacyGuard-Android** is a proof-of-concept demo app. It uses the front camera on Samsung Galaxy devices (and other modern Android phones) to detect when a second face is present and instantly displays a privacy shield overlay on the app's screen — on-device, real-time.
 
-### How it Works
-1. **Sense** — Front camera captures frames via CameraX
-2. **Detect** — Google ML Kit Face Detection on-device counts faces
-3. **Shield** — Displays a full-screen privacy overlay within the app in <150ms
-4. **Restore** — Instantly returns when second face leaves
+PrivacyGuard-Android provides an in-app demonstration of real-time, on-device second-face detection. When the app's camera detects more than one face, it immediately overlays a privacy shield on the screen. All processing occurs locally with no data transmitted or stored.
 
-**End-to-end on-device. No data recorded, stored, or transmitted.**
+### How It Works
 
-## Why Samsung/Android
-| Third-party App | Native Android/Samsung Feature |
-|-----------------|-------------------------------|
-| ❌ Limited background camera access | ✅ Works reliably with CameraX |
-| ❌ Cannot easily overlay system-wide | ✅ Extensible via WindowManager or accessibility service (Phase 2 with Knox) |
-| ❌ Each app needs integration | ✅ Standalone demo app; future system service |
+1. **Sense** — Captures live frames from the front camera using CameraX.
+2. **Detect** — Applies ML Kit's on-device Face Detection to count faces in real time.
+3. **Shield** — Displays a full-screen privacy overlay if multiple faces are detected (response time under 150ms).
+4. **Restore** — Removes the overlay instantly once only a single face remains in view.
 
-Samsung Knox provides hardware-backed security for processing, making it ideal for privacy features. ML Kit runs efficiently on Samsung Exynos and Snapdragon chips.
+## Current Scope
 
-## Implementation Path
-- **Android 10+**: Full in-app demo with CameraX + ML Kit (COMPLETE as POC)
-- **Android 12+**: Enhanced with Samsung Knox integration and system-level options (Phase 2)
-- **Future**: OEM-level integration for system-wide default
+This is a standalone in-app demo. The shield protects the screen within this application only. 
 
-## The Ask
-Make Android the platform where your screen sees only you — starting with Samsung Galaxy devices.
+System-wide shielding (e.g., overlaying other apps or using accessibility services) is planned for Phase 2 and would require additional permissions and development.
+
+## Why Android and Samsung
+
+| Aspect                  | Benefit |
+|-------------------------|---------|
+| Camera Access           | CameraX delivers consistent, reliable front-camera performance across Android versions and devices. |
+| On-Device ML            | ML Kit runs efficiently on Snapdragon and Exynos processors with no cloud dependency. |
+| Security Foundation     | Samsung Knox provides hardware-backed security options for future enhancements. |
+| Extensibility           | Architecture supports expansion to system-level privacy features. |
+
+## Implementation Roadmap
+
+- **Phase 1 (Complete)**: In-app demo featuring CameraX integration, ML Kit face detection, and dynamic shield overlay.
+- **Phase 2**: Samsung Knox integration and prototype system-wide shielding capabilities.
+- **Future**: Potential for OEM-level, native system integration.
 
 ## Quick Start
-```bash
-git clone https://github.com/ar-fullsend/PrivacyGuard-Android.git
-cd PrivacyGuard-Android
-# Open in Android Studio
-```
 
-## Repo Structure
-- `app/` — Android app module with face detection and shield logic
-- `README.md` — This pitch and guide
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/ar-fullsend/PrivacyGuard-Android.git
+   cd PrivacyGuard-Android
+   ```
 
-**Status**: POC ready — Core face detection and in-app shield overlay implemented. Ready for Samsung device testing.
+2. Open the project in Android Studio (latest stable version recommended).
 
-**Contributing**: Issues and PRs welcome.
+3. Connect a physical Android device (API 29 / Android 10 or higher). Emulators have limited front-camera support for testing.
 
-**License**: MIT (see LICENSE file)
+4. Sync the project and run the app.
 
-## Completed
-- CameraX integration for front camera
-- ML Kit on-device face counting
-- In-app screen dim/overlay on second face detection
-- Optimized for Samsung models (tested conceptually on S23/S24 series)
+5. Grant the **Camera** permission when prompted.
 
-**Note**: This is an in-app demo. Open the app, grant CAMERA permission, start monitoring, and point the front camera at faces to trigger the shield. System-wide protection across other apps is planned for Phase 2 (requires additional permissions and services). No SYSTEM_ALERT_WINDOW needed for current version.
+6. Tap **Start Monitoring**. Position yourself and a second person (or object simulating a face) in front of the camera to trigger the shield.
+
+**Test Tip**: The shield activates only when the app's camera view detects two or more faces.
+
+## Project Structure
+
+- `app/` — Core Android application module
+  - Camera preview and real-time ML Kit analysis
+  - Dynamic privacy shield overlay UI
+  - Permission handling and status indicators
+- `README.md` — Project documentation and usage guide
+
+## Status
+
+**POC Ready** — Core features fully implemented and validated conceptually on Samsung Galaxy S23/S24 series. Ready for device testing and further development.
+
+## Required Permissions
+
+- `android.permission.CAMERA` — Essential for front-camera access and face detection.
+
+No additional permissions (such as SYSTEM_ALERT_WINDOW) are needed for the current in-app implementation.
+
+## Contributing
+
+We welcome issues, pull requests, and feedback to improve privacy tools on Android. 
+
+## License
+
+MIT License — see the [LICENSE](LICENSE) file for details.
+
+---
+
+*Built with a focus on on-device privacy and practical usability.*
