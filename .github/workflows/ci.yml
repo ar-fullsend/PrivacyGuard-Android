@@ -1,0 +1,33 @@
+name: Swift CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      run: |
+        SWIFT_TARGET="arm64-apple-ios18.0-simulator"
+        IPHONE_SIM_SDK="$(xcrun --sdk iphonesimulator --show-sdk-path)"
+        swift build --target PrivacyGuard \
+          -Xswiftc "-target" -Xswiftc "$SWIFT_TARGET" \
+          -Xswiftc "-sdk" -Xswiftc "$IPHONE_SIM_SDK" \
+          -Xcc "-isysroot" -Xcc "$IPHONE_SIM_SDK" \
+          -Xcc "-target" -Xcc "$SWIFT_TARGET"
+    - name: Test
+      run: |
+        SWIFT_TARGET="arm64-apple-ios18.0-simulator"
+        IPHONE_SIM_SDK="$(xcrun --sdk iphonesimulator --show-sdk-path)"
+        # Build the test target to verify tests compile for iOS simulator.
+        # (swift test is avoided due to XCTest linking issues in cross-compilation on macOS runner)
+        swift build --target PrivacyGuardTests \
+          -Xswiftc "-target" -Xswiftc "$SWIFT_TARGET" \
+          -Xswiftc "-sdk" -Xswiftc "$IPHONE_SIM_SDK" \
+          -Xcc "-isysroot" -Xcc "$IPHONE_SIM_SDK" \
+          -Xcc "-target" -Xcc "$SWIFT_TARGET"
