@@ -5,21 +5,14 @@
 # For more details, see
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Samsung Knox SDK rules (uncomment when using full knoxsdk.jar)
+#-keep class com.samsung.android.knox.** { *; }
+#-keep class com.samsung.android.knox.container.** { *; }
+#-keep class com.samsung.android.knox.license.** { *; }
+#-keep class com.samsung.android.knox.restriction.** { *; }
+#-keep class com.samsung.android.knox.application.** { *; }
+#-keep class com.samsung.android.knox.deviceinfo.** { *; }
+#-keep class com.samsung.android.knox.security.password.** { *; }
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
-
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
-
-# ML Kit and CameraX specific rules if needed
--keep class com.google.mlkit.** { *; }
--keep class androidx.camera.** { *; }
+# Keep PrivacyGuard classes
+-keep class com.arfullsend.privacyguard.** { *; }
